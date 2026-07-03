@@ -34,4 +34,4 @@ Quick start for maintainers:
     # Build 32-bit version
     $ spack env activate star-x86
     $ spack install
-    $ despacktivate
+    $ despacktivate 
