@@ -21,6 +21,9 @@ on:
 jobs:
   push-artifact:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Download artifact from previous run
         env:
@@ -39,7 +42,6 @@ jobs:
         run: |
           docker load --input /tmp/star-spack-${{ inputs.starenv }}-${{ inputs.compiler }}.tar
           
-          # Convert username to lowercase
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           
           REFTAG="0.4-${{ inputs.starenv }}-${{ inputs.compiler }}"
