@@ -10,8 +10,6 @@ spack:
     - boost
     - eigen
     - fastjet
-    - geant4
-    - geant4-vmc
     - genfit
     - gsl
     - kitrack
@@ -19,11 +17,19 @@ spack:
     - log4cxx
     - mysql
     - rave
-    - root@6.24.06 ~vc ~vmc
     - star-env@0.4.0
     - star-table
     - vc@0.7.4
-    - vmc
+    - root@6.24.06 ~vc ~vmc
+    - clhep
+    - g4ensdfstate@2.2
+    - g4neutronxs@1.4
+    - g4photonevaporation@5.3
+    - g4saiddata@2.0
+    - geant4@10.5.1
+    - geant4-vmc@5-0-p5
+    - geant3@3-9-p1
+    - vmc@1-0-p3
   packages:
     all:
       target: [x86_64]
