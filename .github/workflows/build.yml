@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - develop
-      - 0.4 
     tags:
       - '*'
   workflow_dispatch:
@@ -104,7 +103,12 @@ jobs:
           name: star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}
           path: /tmp/
 
-      - run: echo "REFTAG=${{ steps.branch-name.outputs.current_branch }}-${{ matrix.starenv }}-${{ matrix.compiler }}" >> $GITHUB_ENV
+      - run: |
+          BRANCH="${{ steps.branch-name.outputs.current_branch }}"
+          if [ -z "$BRANCH" ]; then BRANCH="0.4"; fi
+          echo "REFTAG=${BRANCH}-${{ matrix.starenv }}-${{ matrix.compiler }}" >> $GITHUB_ENV
       - run: docker load --input /tmp/star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}.tar
+      - run: |
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
       - run: docker tag star-spack ghcr.io/${{ github.repository_owner }}/star-spack:${REFTAG}
       - run: docker push ghcr.io/${{ github.repository_owner }}/star-spack:${REFTAG}
