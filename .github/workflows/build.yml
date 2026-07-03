@@ -5,8 +5,10 @@ on:
     branches:
       - main
       - develop
+      - 0.4 
     tags:
       - '*'
+  workflow_dispatch:
   pull_request:
 
 jobs:
