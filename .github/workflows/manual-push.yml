@@ -1,0 +1,48 @@
+name: Manual Push from Artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'The Run ID of failed build (from the URL of that run)'
+        required: true
+        type: string
+      starenv:
+        description: 'The starenv to push (e.g., root6)'
+        required: true
+        default: 'root6'
+        type: string
+      compiler:
+        description: 'The compiler to push (e.g., gcc485)'
+        required: true
+        default: 'gcc485'
+        type: string
+
+jobs:
+  push-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact from previous run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ inputs.run_id }} --name star-spack-${{ inputs.starenv }}-${{ inputs.compiler }} --dir /tmp/
+
+      - name: Login to GitHub container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and Push
+        run: |
+          docker load --input /tmp/star-spack-${{ inputs.starenv }}-${{ inputs.compiler }}.tar
+          
+          # Convert username to lowercase
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          
+          REFTAG="0.4-${{ inputs.starenv }}-${{ inputs.compiler }}"
+          
+          docker tag star-spack ghcr.io/${OWNER_LOWER}/star-spack:${REFTAG}
+          docker push ghcr.io/${OWNER_LOWER}/star-spack:${REFTAG}
