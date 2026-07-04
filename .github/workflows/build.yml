@@ -3,9 +3,11 @@ name: CI Build
 on:
   push:
     branches:
+      - main
       - develop
     tags:
       - '*'
+  workflow_dispatch:
   pull_request:
 
 jobs:
@@ -14,7 +16,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - run: echo '::set-output name=matrix::{"starenv":["root5", "root6", "root624"], "compiler":["gcc485", "gcc11"], "exclude":[{"starenv":"root624", "compiler":"gcc485"}]}'
+      - run: echo 'matrix={"starenv":["root6"], "compiler":["gcc485"]}' >> $GITHUB_OUTPUT
         id: set-matrix
 
   build:
@@ -48,7 +50,7 @@ jobs:
           outputs: type=docker,dest=/tmp/star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}.tar
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}
           path: /tmp/star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}.tar
@@ -59,7 +61,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - run: .github/workflows/delete_untagged.py ${{ secrets.STAR_SPACK_TOKEN }}
+      - run: .github/workflows/delete_untagged.py ${{ secrets.GITHUB_TOKEN }} 
 
   test:
     runs-on: ubuntu-latest
@@ -69,7 +71,7 @@ jobs:
     needs: [envmatrix, build]
     steps:
       - name: Download image artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}
           path: /tmp/
@@ -78,7 +80,7 @@ jobs:
       - run: docker run star-spack modulecmd bash avail
 
   tag:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/0.4' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJSON(needs.envmatrix.outputs.matrix) }}
@@ -96,12 +98,17 @@ jobs:
         uses: tj-actions/branch-names@v5.2
 
       - name: Download image artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}
           path: /tmp/
 
-      - run: echo "REFTAG=${{ steps.branch-name.outputs.current_branch }}-${{ matrix.starenv }}-${{ matrix.compiler }}" >> $GITHUB_ENV
+      - run: |
+          BRANCH="${{ steps.branch-name.outputs.current_branch }}"
+          if [ -z "$BRANCH" ]; then BRANCH="0.4"; fi
+          echo "REFTAG=${BRANCH}-${{ matrix.starenv }}-${{ matrix.compiler }}" >> $GITHUB_ENV
       - run: docker load --input /tmp/star-spack-${{ matrix.starenv }}-${{ matrix.compiler }}.tar
-      - run: docker tag star-spack ghcr.io/star-bnl/star-spack:${REFTAG}
-      - run: docker push ghcr.io/star-bnl/star-spack:${REFTAG}
+      - run: |
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+      - run: docker tag star-spack ghcr.io/${{ github.repository_owner }}/star-spack:${REFTAG}
+      - run: docker push ghcr.io/${{ github.repository_owner }}/star-spack:${REFTAG}
