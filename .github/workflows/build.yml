@@ -61,7 +61,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - run: .github/workflows/delete_untagged.py ${{ secrets.STAR_SPACK_TOKEN }}
+      - run: .github/workflows/delete_untagged.py ${{ secrets.GITHUB_TOKEN }} 
 
   test:
     runs-on: ubuntu-latest
